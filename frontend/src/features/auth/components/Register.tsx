@@ -1,48 +1,42 @@
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
+// frontend/src/features/auth/components/Register.tsx
+
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EnvelopeSimple, LockKey, User } from '@phosphor-icons/react'
-import { useAuth } from '../hooks/useAuth'
+import { useAuth } from '@/hooks/useAuth'
 
-// Validation schema
-const registerSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters').optional(),
-  email: z.string().email('Invalid email address'),
-  password: z
-    .string()
-    .min(8, 'Password must be at least 8 characters')
-    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-    .regex(/[0-9]/, 'Password must contain at least one number'),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ['confirmPassword'],
-})
+export default function Register() {
+  const { register } = useAuth()
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
 
-type RegisterFormData = z.infer<typeof registerSchema>
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
 
-/**
- * Register Page
- */
-export default function RegisterPage() {
-  const { register: registerUser } = useAuth()
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<RegisterFormData>({
-    resolver: zodResolver(registerSchema),
-  })
+    // Basic validation
+    if (password !== confirmPassword) {
+      setError("Passwords don't match")
+      return
+    }
 
-  const onSubmit = async (data: RegisterFormData) => {
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters')
+      return
+    }
+
+    setIsLoading(true)
+
     try {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { confirmPassword, ...registerData } = data
-      await registerUser(registerData)
-    } catch (error) {
-      // Error is handled in useAuth hook
+      await register({ email, password, name: name || undefined })
+    } catch {
+      // Error handled in useAuth
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -50,7 +44,6 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center bg-base-200 px-4 py-12">
       <div className="card w-full max-w-md bg-base-100 shadow-xl">
         <div className="card-body">
-          {/* Header */}
           <h1 className="card-title text-3xl font-bold text-center justify-center mb-2">
             Create Account
           </h1>
@@ -58,8 +51,7 @@ export default function RegisterPage() {
             Sign up to get started
           </p>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             {/* Name */}
             <div className="form-control">
               <label className="label">
@@ -72,17 +64,11 @@ export default function RegisterPage() {
                 <input
                   type="text"
                   placeholder="John Doe"
-                  className={`input input-bordered w-full pl-10 ${
-                    errors.name ? 'input-error' : ''
-                  }`}
-                  {...register('name')}
+                  className="input input-bordered w-full pl-10"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
                 />
               </div>
-              {errors.name && (
-                <label className="label">
-                  <span className="label-text-alt text-error">{errors.name.message}</span>
-                </label>
-              )}
             </div>
 
             {/* Email */}
@@ -97,17 +83,12 @@ export default function RegisterPage() {
                 <input
                   type="email"
                   placeholder="you@example.com"
-                  className={`input input-bordered w-full pl-10 ${
-                    errors.email ? 'input-error' : ''
-                  }`}
-                  {...register('email')}
+                  className="input input-bordered w-full pl-10"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
                 />
               </div>
-              {errors.email && (
-                <label className="label">
-                  <span className="label-text-alt text-error">{errors.email.message}</span>
-                </label>
-              )}
             </div>
 
             {/* Password */}
@@ -122,17 +103,12 @@ export default function RegisterPage() {
                 <input
                   type="password"
                   placeholder="••••••••"
-                  className={`input input-bordered w-full pl-10 ${
-                    errors.password ? 'input-error' : ''
-                  }`}
-                  {...register('password')}
+                  className="input input-bordered w-full pl-10"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
                 />
               </div>
-              {errors.password && (
-                <label className="label">
-                  <span className="label-text-alt text-error">{errors.password.message}</span>
-                </label>
-              )}
             </div>
 
             {/* Confirm Password */}
@@ -147,28 +123,28 @@ export default function RegisterPage() {
                 <input
                   type="password"
                   placeholder="••••••••"
-                  className={`input input-bordered w-full pl-10 ${
-                    errors.confirmPassword ? 'input-error' : ''
-                  }`}
-                  {...register('confirmPassword')}
+                  className="input input-bordered w-full pl-10"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
                 />
               </div>
-              {errors.confirmPassword && (
-                <label className="label">
-                  <span className="label-text-alt text-error">
-                    {errors.confirmPassword.message}
-                  </span>
-                </label>
-              )}
             </div>
+
+            {/* Error Message */}
+            {error && (
+              <div className="alert alert-error">
+                <span>{error}</span>
+              </div>
+            )}
 
             {/* Submit */}
             <button
               type="submit"
               className="btn btn-primary w-full"
-              disabled={isSubmitting}
+              disabled={isLoading}
             >
-              {isSubmitting ? (
+              {isLoading ? (
                 <>
                   <span className="loading loading-spinner loading-sm"></span>
                   Creating account...
@@ -179,7 +155,6 @@ export default function RegisterPage() {
             </button>
           </form>
 
-          {/* Footer */}
           <div className="divider">OR</div>
           <p className="text-center text-sm text-base-content/70">
             Already have an account?{' '}

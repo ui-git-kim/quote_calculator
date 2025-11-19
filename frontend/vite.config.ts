@@ -14,7 +14,7 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173,  // Vite's new default (or omit this line)
+    port: 5173,  
     proxy: {
       '/api': {
         target: 'http://localhost:3100',
